@@ -98,7 +98,7 @@ def check_for_straight(non_wilds, wild_count):
 def compare_hands(hands):
     scores = [0 for _ in hands]
     x_count = sum([h.count('XX') for h in hands])
-    for i in range(3000):
+    for i in range(10000):
         if os.name == 'nt':
             os.system('cls')
         else:
