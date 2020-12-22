@@ -1,6 +1,8 @@
 import random
 import itertools
 import os
+import time
+now = time.time()
 
 def evaluate_high(hand):
     ranks = '23456789TJQKA'
@@ -99,40 +101,70 @@ def compare_hands(hands):
     scores = [0 for _ in hands]
     x_count = sum([h.count('XX') for h in hands])
     for i in range(10000):
+    #### Comment out these lines for speed
         if os.name == 'nt':
             os.system('cls')
         else:
             print("\033[H\033[J")
         for n in range(len(hands)): print(hands[n], scores[n]/(i+1))
+    #### Or leave them uncommented to see it develop over time
         sample = random.sample(deck, x_count)
+        #### For low
+#        new_hands = [best_low_hand([sample.pop(0) if c=='XX' else c for c in hand]) for hand in hands]
+#        scores[new_hands.index(min(new_hands, key=evaluate_low))]+=1
+        #### For high
         new_hands = [best_high_hand([sample.pop(0) if c=='XX' else c for c in hand]) for hand in hands]
-        #change these     ^^^^ vvv    to switch hi/low     vvvv
         scores[new_hands.index(max(new_hands, key=evaluate_high))]+=1
     return scores
     
+def get_hand(n):
+    return [deck.pop(random.randrange(len(deck))) for i in range(n)]
+
+def get_enemy_hand(n):
+    return ['XX' for _ in range(min(n, 2))]+get_hand(min(n-2, 4))+['XX' for _ in range(1) if n==7]
+
+def get_table(num_of_cards, num_of_players):
+    return [get_enemy_hand(num_of_cards) for _ in range(num_of_players)]
+
 deck = [r+s for r in 'A23456789TJQK' for s in 'SDCH']
-wilds = [w for w in input('Wilds(seperate by \' \'): ').split(' ') if len(w)==1]
-print('Wilds are:', wilds, '\n')
-hands = []
-print('Assumes first hand is yours when choosing action.')
-print('Must be 5 cards at minimum.')
-print('(XX for unknown) (don\'t do wilds) (d means done)')
-print('Input hands as AH 2S TD ...\n')
-inp = input('Hand %s: ' % (len(hands)+1))
-while inp!='d':
-    hand = []
-    for c in inp.split(' '):
-        if len(c)==2: hand.append(c)
-        if c in deck: deck.remove(c)
-    if len(hand)>0: hands.append(hand)
-    inp = input('Hand %s: ' % (len(hands)+1))
+
+#### This is if you don't want to plug in hands
+wilds = ['3', '9']
+hands = get_table(7, 6)
+
+#### If you're in a game uncomment this
+#hands = []
+#wilds = [w for w in input('Wilds(seperate by \' \'): ').split(' ') if len(w)==1]
+#print('Wilds are:', wilds, '\n')
+#print('Assumes first hand is yours when choosing action.')
+#print('Must be 5 cards at minimum.')
+#print('(XX for unknown) (don\'t do wilds) (type \'d\' to end hand input)')
+#print('Input hands as AH 2S TD ...\n')
+#inp = input('Hand %s: ' % (len(hands)+1))
+#while inp!='d':
+#    hand = []
+#    for c in inp.split(' '):
+#        if len(c)==2: hand.append(c)
+#        if c in deck: deck.remove(c)
+#    if len(hand)>0: hands.append(hand)
+#    inp = input('Hand %s: ' % (len(hands)+1))
+
+#### This bit is to make them wild don't uncomment
 deck = ['??' if c[0] in wilds else c for c in deck]
 wild_hands = [['??' if c[0] in wilds else c for c in hand] for hand in hands]
+for hand in wild_hands: print(hand)
 scores = compare_hands(wild_hands)
-bet, pot = int(input('Bet: ')), int(input('Pot: '))
-print('Action:', {True: 'Call', False: 'Fold'}[scores[0]>bet/(pot+bet)])
-print('for future use:')
-for hand in hands:
-    print()
-    for c in hand: print(c, end = ' ')
-print()
+print(scores)
+print([s/10000 for s in scores])
+
+#### Uncomment this to calculate the action to take
+
+#bet, pot = int(input('Bet: ')), int(input('Pot: '))
+#print('Action:', {True: 'Call', False: 'Fold'}[scores[0]>bet/(pot+bet)])
+#print('for future use:')
+#for hand in hands:
+#    print()
+#    for c in hand: print(c, end = ' ')
+#print()
+
+print('Time elapsed:',time.time()-now)
