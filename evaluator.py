@@ -38,88 +38,62 @@ def best_low_hand(hand):
     return [lows[i]+'SDCH'[i%4] for i in range(wild_count)]+new_non_wilds
     
 def best_high_hand(hand):
-    ranks='23456789TJQKA'
     suits='SDCH'
     wild_count = hand.count('??')
+    #returns 5 Aces
+    if wild_count>=5: return ['A'+suits[i%4] for i in range(5)]
     non_wilds = sorted([c for c in hand if c!='??'], key=lambda n: 'AKQJT98765432'.index(n[0]))
-    non_wild_suits = [c[1] for c in non_wilds]
-    if wild_count>=5:
-        return ['A'+suits[i%4] for i in range(5)]
-    elif wild_count==4:
-        return [non_wilds[0][0]+suits[i%4] for i in range(5)]
-    elif wild_count==3:
-        #Check for pair which means five of a kind
-        non_wild_ranks = [c[0] for c in non_wilds]
-        for x, z in {i:non_wild_ranks.count(i) for i in non_wild_ranks}.items():
-            if z>=2: return [x+suits[i%4] for i in range(5)]
-        #Check for straight flush #non_wilds is sorted so it's guaranteed to be the best
-        for x, z in {i:non_wild_suits.count(i) for i in non_wild_suits}.items():
-            if z>=2:
-                for a, b in list(itertools.combinations([c for c in non_wilds if c[1]==x], 2)):
-                    if abs(ranks.index(a[0])-ranks.index(b[0]))<5:
-                        #if there is a straight the low card maxes at 8
-                        low=min(ranks.index(min([a[0], b[0]], key=ranks.index)), 8)
-                        return [ranks[low+i]+x for i in range(5)]
-        #worst 3 card wild hand is 4 of the best with second best as kicker
-        return [non_wilds[0][0]+suits[i] for i in range(4)]+[non_wilds[1]]
-    elif wild_count==2:
-        eval = evaluate_high([c for c in hand if c != '??'])
-        #check for 3 or 4 of a kind or full house
-        if eval[0][0] >= 3 and eval[0] not in [(3,1,2),(3,1,3)]:
-            return [ranks[eval[1][0]]+suits[i%4] for i in range(5)]
-        #check for straight flush
-        for x, z in {i:non_wild_suits.count(i) for i in non_wild_suits}.items():
-            if z>=3:
-                for a, b, c in list(itertools.combinations([c for c in non_wilds if c[1]==x], 3)):
-                    rs = [ranks.index(n[0]) for n in [a,b,c]]
-                    if abs(rs[0]-rs[2])<5 and rs[0]>rs[1]>rs[2]:
-                        low=min(ranks.index(min([a[0], b[0]], key=ranks.index)), 8)
-                        return [ranks[low+i]+x for i in range(5)]
-        #check for pair or 2 pair
-        if eval[0][0] == 2:
-            return [ranks[eval[1][0]]+suits[i] for i in range(4)]+[c for c in non_wilds if c[0] != ranks[eval[1][0]]][:1]
-        #check for flush
-        for x, z in {i:non_wild_suits.count(i) for i in non_wild_suits}.items():
-            if z>=3: return [c for c in non_wilds if c[1]==x][:3]+[r+x for r in 'AKQJT' if r not in [c[0] for c in non_wilds if c[1]==x]][:2]
-        #check for straight
-        for a, b, c in list(itertools.combinations([c for c in non_wilds], 3)):
-            rs = [ranks.index(n[0]) for n in [a,b,c]]
-            if abs(rs[0]-rs[2])<5 and rs[0]>rs[1]>rs[2]:
-                low=min(rs[2], 8)
-                return [c,b,a]+[ranks[low+i]+suits[i%4] for i in range(5) if low+i not in rs]
-        #default to 3 of a kind
-        return [ranks[eval[1][0]]+suits[i] for i in range(3)]+[c for c in non_wilds if c[0] != ranks[eval[1][0]]][:2]
-    elif wild_count==1:
-        eval = evaluate_high([c for c in hand if c != '??'])
-        #check for 4 of a kind
-        if eval[0][0] == 4:
-            return [ranks[eval[1][0]]+suits[i%4] for i in range(5)]
-        #check for straight flush
-        for x, z in {i:non_wild_suits.count(i) for i in non_wild_suits}.items():
-            if z>=3:
-                for a, b, c, d in list(itertools.combinations([c for c in non_wilds], 4)):
-                    rs = [ranks.index(n[0]) for n in [a,b,c, d]]
-                    if abs(rs[0]-rs[3])<5 and rs[0]>rs[1]>rs[2]>rs[3]:
-                        low=min(rs[3], 8)
-                        return [d,c,b,a]+[ranks[low+i]+x for i in range(5) if low+i not in rs]
-        if eval[0][0] == 3:
-            return [ranks[eval[1][0]]+suits[i] for i in range(4)]+[c for c in non_wilds if c[0] != ranks[eval[1][0]]][:1]
-        #check for flush
-        for x, z in {i:non_wild_suits.count(i) for i in non_wild_suits}.items():
-            if z>=4: return [c for c in non_wilds if c[1]==x][:4]+[r+x for r in 'AKQJT' if r not in [c[0] for c in non_wilds if c[1]==x]][:1]
-        #check for straight
-        for a, b, c, d in list(itertools.combinations([c for c in non_wilds], 4)):
-            rs = [ranks.index(n[0]) for n in [a,b,c, d]]
-            if abs(rs[0]-rs[3])<5 and rs[0]>rs[1]>rs[2]>rs[3]:
-                low=min(rs[3], 8)
-                return [d,c,b,a]+[ranks[low+i]+suits[i%4] for i in range(5) if low+i not in rs]
-        if eval[0][0] == 2:
-            return [ranks[eval[1][0]]+suits[i] for i in range(3)]+[c for c in non_wilds if c[0] != ranks[eval[1][0]]][:2]
-        #default to pair of best
-        hand = list(max(itertools.combinations([c for c in hand if c != '??'], 5), key=evaluate_high))
-        return hand[:1]+hand[:-1]
-    else:
-        return list(max(itertools.combinations(hand, 5), key=evaluate_high))
+    #sorts hand by ranks for pair testing
+    non_wild_ranks = [c[0] for c in non_wilds]
+    rank_count = {i:non_wild_ranks.count(i) for i in non_wild_ranks}
+    #returns best 5 of a kind
+    for x, z in rank_count.items():
+        if z>=5-wild_count: return [x+suits[i%4] for i in range(5)]
+    #sort hand by suits for flush testing
+    non_wilds_by_suit = [[c for c in non_wilds if c[1] == s] for s in suits]
+    #if one of the flushes can make a straight return straight flush
+    for flush in non_wilds_by_suit:
+        straight = check_for_straight(flush, wild_count)
+        if len(straight)==5: return [c[0]+straight[0][1] for c in straight]
+    #returns best 4 of a kind with best kicker
+    for x, z in rank_count.items():
+        if z>=4-wild_count: return [x+suits[i] for i in range(4)]+[c for c in non_wilds if c[0]!=x][:1]
+    #returns full house with or without wilds
+    dups = [[k,v] for k, v in rank_count.items() if v>=2]
+    duplicates = []
+    if len(dups)>=2:
+        duplicates = [c for c in non_wilds for i in [0,1] if c[0]==dups[i][0]]
+        if wild_count==1 or len(duplicates)==5: return duplicates+[c for c in non_wilds if c[0]==dups[0][0]][:wild_count]
+    #returns flush
+    for flush in non_wilds_by_suit:
+        if len(flush)>=5-wild_count:
+            return [c for c in flush][:5-wild_count]+[r+flush[0][1] for r in 'AKQJT' if r not in [c[0] for c in flush]][:wild_count]
+    #returns straight
+    straight = check_for_straight(non_wilds, wild_count)
+    if len(straight)==5: return straight
+    #returns best 3 of a kind
+    for x, z in rank_count.items():
+        if z>=3-wild_count: return [x+suits[i] for i in range(3)]+[c for c in non_wilds if c[0]!=x][:2]
+    #returns 2 pair with best kicker
+    if len(duplicates)==4: return duplicates+[c for c in non_wilds if c not in duplicates][:1]
+    #returns pair
+    for x, z in rank_count.items():
+        if z>=2-wild_count: return [x+suits[i] for i in range(2)]+[c for c in non_wilds if c[0]!=x][:3]
+    #high card
+    return non_wilds[:5]
+    
+def check_for_straight(non_wilds, wild_count):
+    ranks='23456789TJQKA'
+    straight = []
+    for n in itertools.combinations(non_wilds, 5-wild_count):
+        rs = [ranks.index(c[0]) for c in n]
+        if rs[0]==12 and rs[-1]<4: rs = rs[1:]+[-1]
+        if rs[0]-rs[-1]<5 and len(rs)==len(set(rs)):
+            low=min(rs[-1], 8)
+            straight = list(n)+[ranks[low+i]+'SDHC'[i%4] for i in range(5) if low+i not in rs]
+            if -1 not in rs:
+                return straight
+    return straight
   
 def compare_hands(hands):
     scores = [0 for _ in hands]
